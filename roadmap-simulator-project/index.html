@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>סימולטור הגנת רואדמאפ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Heebo:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #14161a;
+    --panel: #1b1e24;
+    --panel-alt: #21242b;
+    --border: #2e323b;
+    --text: #ededef;
+    --text-dim: #8b909c;
+    --text-faint: #5a5f6a;
+    --amber: #e8a33d;
+    --red: #d64545;
+    --teal: #4fd1a5;
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Heebo', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  body.theme-light{
+    --bg: #f2f3f5;
+    --panel: #ffffff;
+    --panel-alt: #f7f8fa;
+    --border: #e0e2e8;
+    --text: #14161a;
+    --text-dim: #5a6070;
+    --text-faint: #9298a5;
+    --amber: #c97f1f;
+    --red: #c23c3c;
+    --teal: #2f9e78;
+  }
+
+  *{ box-sizing: border-box; margin:0; padding:0; }
+
+  html,body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    direction: rtl;
+  }
+
+  body{
+    background-image:
+      radial-gradient(ellipse 900px 500px at 50% -10%, rgba(232,163,61,0.06), transparent),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px);
+    transition: background-color 0.2s, color 0.2s;
+  }
+
+  .app{
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .top-bar{
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .lang-toggle{
+    display: flex;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .lang-toggle button{
+    background: transparent;
+    border: none;
+    font-size: 15px;
+    line-height: 1;
+    padding: 6px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+    opacity: 0.45;
+    transition: opacity 0.15s, background 0.15s;
+    filter: grayscale(60%);
+  }
+  .lang-toggle button.active{
+    opacity: 1;
+    filter: none;
+    background: var(--panel-alt);
+  }
+  .lang-toggle button:focus-visible{ outline: 2px solid var(--amber); outline-offset: 2px; }
+  .theme-toggle{
+    display: flex;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .theme-toggle button{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    padding: 6px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .theme-toggle button.active{
+    background: var(--amber);
+    color: #14161a;
+  }
+  .theme-toggle button:focus-visible{ outline: 2px solid var(--amber); outline-offset: 2px; }
+
+  .eyebrow{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--amber);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .eyebrow::before{
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--amber);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--amber);
+  }
+
+  h1{
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(28px, 5vw, 42px);
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+    margin-bottom: 12px;
+  }
+
+  .sub{
+    color: var(--text-dim);
+    font-size: 15.5px;
+    line-height: 1.6;
+    max-width: 560px;
+    margin-bottom: 36px;
+  }
+
+  /* ---------- Screens ---------- */
+  .screen{ display: none; flex: 1; flex-direction: column; }
+  .screen.active{ display: flex; animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn{ from{ opacity:0; transform: translateY(6px);} to{opacity:1; transform:none;} }
+
+  /* ---------- Setup screen ---------- */
+  label.field-label{
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  textarea{
+    width: 100%;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.55;
+    padding: 16px;
+    resize: vertical;
+    min-height: 110px;
+    transition: border-color 0.15s;
+  }
+  textarea::placeholder{ color: var(--text-faint); }
+  textarea:focus{
+    outline: none;
+    border-color: var(--amber);
+  }
+  textarea:focus-visible{ outline: 2px solid var(--amber); outline-offset: 2px; }
+
+  .field{ margin-bottom: 28px; }
+
+  .persona-grid{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  @media (max-width: 620px){
+    .persona-grid{ grid-template-columns: 1fr; }
+  }
+
+  .persona-card{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 16px;
+    cursor: pointer;
+    text-align: start;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    font-family: var(--font-body);
+    color: var(--text);
+    position: relative;
+  }
+  .persona-card:hover{ border-color: var(--text-faint); background: var(--panel-alt); }
+  .persona-card:focus-visible{ outline: 2px solid var(--amber); outline-offset: 2px; }
+  .persona-card.selected{
+    border-color: var(--amber);
+    background: linear-gradient(160deg, rgba(232,163,61,0.10), var(--panel));
+  }
+  .persona-card.selected::after{
+    content: '✓';
+    position: absolute;
+    top: 12px; left: 12px;
+    color: var(--amber);
+    font-size: 13px;
+    font-family: var(--font-mono);
+  }
+  .persona-icon{
+    font-family: var(--font-mono);
+    font-size: 20px;
+    color: var(--amber);
+    margin-bottom: 10px;
+    display: block;
+  }
+  .persona-name{
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 15.5px;
+    margin-bottom: 6px;
+  }
+  .persona-tag{
+    font-size: 12.5px;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  .custom-fields{
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 12px;
+  }
+  .custom-fields.visible{ display: flex; }
+  .custom-fields input, .custom-fields textarea{
+    width: 100%;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 14px;
+    padding: 11px 13px;
+  }
+  .custom-fields textarea{ min-height: 70px; resize: vertical; }
+  .custom-fields input:focus, .custom-fields textarea:focus{
+    outline: none;
+    border-color: var(--amber);
+  }
+  .custom-fields .mini-label{
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .upload-row{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .upload-btn{
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    background: var(--panel);
+    border: 1px dashed var(--border);
+    color: var(--text-dim);
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .upload-btn:hover{ border-color: var(--amber); color: var(--text); }
+  .file-chip{
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 8px 6px 12px;
+  }
+  .file-chip.visible{ display: inline-flex; }
+  .file-chip button{
+    background: none;
+    border: none;
+    color: var(--text-faint);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 2px 4px;
+  }
+  .file-chip button:hover{ color: var(--red); }
+  .upload-hint{
+    font-size: 11.5px;
+    color: var(--text-faint);
+    margin-top: 6px;
+  }
+
+  button.primary{
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 15.5px;
+    background: var(--amber);
+    color: #14161a;
+    border: none;
+    border-radius: 10px;
+    padding: 15px 26px;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.1s;
+    width: 100%;
+  }
+  button.primary:hover{ filter: brightness(1.08); }
+  button.primary:active{ transform: scale(0.99); }
+  button.primary:disabled{ opacity: 0.4; cursor: not-allowed; filter: none; }
+  button.primary:focus-visible{ outline: 2px solid var(--text); outline-offset: 2px; }
+
+  button.ghost{
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    letter-spacing: 0.05em;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 8px;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  button.ghost:hover{ border-color: var(--text-dim); color: var(--text); }
+
+  /* ---------- Battle screen ---------- */
+  .battle-header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+
+  .opponent-info{ display: flex; align-items: center; gap: 12px; }
+  .opponent-avatar{
+    width: 42px; height: 42px;
+    border-radius: 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 17px;
+    color: var(--amber);
+    flex-shrink: 0;
+  }
+  .opponent-name{ font-family: var(--font-display); font-weight: 600; font-size: 16px; }
+  .opponent-role{ font-size: 12px; color: var(--text-dim); }
+
+  .gauge-wrap{ display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .gauge-label{
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+  }
+  .gauge-value{
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .transcript{
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 280px;
+    max-height: 52vh;
+  }
+
+  .msg{ display: flex; max-width: 84%; animation: msgIn 0.3s ease; }
+  @keyframes msgIn{ from{opacity:0; transform: translateY(8px);} to{opacity:1; transform:none;} }
+  .msg.opp{ align-self: flex-start; }
+  .msg.user{ align-self: flex-end; }
+  .bubble{
+    padding: 13px 16px;
+    border-radius: 12px;
+    font-size: 14.5px;
+    line-height: 1.55;
+  }
+  .msg.opp .bubble{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-top-right-radius: 3px;
+  }
+  .msg.user .bubble{
+    background: rgba(232,163,61,0.12);
+    border: 1px solid rgba(232,163,61,0.3);
+    border-top-left-radius: 3px;
+  }
+
+  .typing{
+    align-self: flex-start;
+    display: flex;
+    gap: 5px;
+    padding: 13px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    border-top-right-radius: 3px;
+    width: fit-content;
+  }
+  .typing span{
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-faint);
+    animation: blink 1.2s infinite ease-in-out;
+  }
+  .typing span:nth-child(2){ animation-delay: 0.2s; }
+  .typing span:nth-child(3){ animation-delay: 0.4s; }
+  @keyframes blink{ 0%,80%,100%{ opacity: 0.25;} 40%{ opacity: 1;} }
+
+  .composer{
+    display: flex;
+    gap: 10px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .composer textarea{
+    min-height: 48px;
+    max-height: 140px;
+    font-size: 14.5px;
+    padding: 13px 14px;
+  }
+  .composer button{
+    font-family: var(--font-display);
+    font-weight: 600;
+    background: var(--amber);
+    color: #14161a;
+    border: none;
+    border-radius: 10px;
+    padding: 0 20px;
+    cursor: pointer;
+    font-size: 14px;
+    flex-shrink: 0;
+    transition: filter 0.15s;
+  }
+  .composer button:hover{ filter: brightness(1.08); }
+  .composer button:disabled{ opacity: 0.4; cursor: not-allowed; }
+
+  .end-note{
+    text-align: center;
+    margin-top: 14px;
+  }
+  .end-note button{ margin-top: 10px; }
+
+  /* ---------- Debrief screen ---------- */
+  .score-card{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 28px;
+    margin-bottom: 24px;
+  }
+  .score-top{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .score-num{
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 52px;
+    line-height: 1;
+  }
+  .score-num span{ font-size: 20px; color: var(--text-dim); font-weight: 500; }
+  .verdict{
+    font-family: var(--font-body);
+    font-size: 15.5px;
+    line-height: 1.6;
+    color: var(--text);
+    padding-top: 4px;
+    max-width: 380px;
+  }
+
+  .breakdown{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 8px;
+  }
+  @media (max-width: 560px){ .breakdown{ grid-template-columns: 1fr; } }
+
+  .breakdown h3{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .breakdown.strengths h3{ color: var(--teal); }
+  .breakdown.weaknesses h3{ color: var(--red); }
+  .breakdown ul{ list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .breakdown li{
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--text-dim);
+    padding-right: 14px;
+    position: relative;
+  }
+  .breakdown li::before{
+    content: '—';
+    position: absolute;
+    right: 0;
+    color: var(--text-faint);
+  }
+
+  .actions-row{ display: flex; gap: 10px; }
+  .actions-row button{ flex: 1; }
+
+  .error-box{
+    background: rgba(214,69,69,0.1);
+    border: 1px solid rgba(214,69,69,0.3);
+    color: var(--red);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 13.5px;
+    margin-top: 14px;
+    line-height: 1.5;
+  }
+
+  ::-webkit-scrollbar{ width: 8px; }
+  ::-webkit-scrollbar-track{ background: transparent; }
+  ::-webkit-scrollbar-thumb{ background: var(--border); border-radius: 4px; }
+
+  /* ---------- LTR (English) direction overrides ---------- */
+  html[dir="ltr"] .persona-card.selected::after{ right: 12px; left: auto; }
+  html[dir="ltr"] .msg.opp .bubble{ border-top-right-radius: 12px; border-top-left-radius: 3px; }
+  html[dir="ltr"] .msg.user .bubble{ border-top-left-radius: 12px; border-top-right-radius: 3px; }
+  html[dir="ltr"] .typing{ border-top-right-radius: 12px; border-top-left-radius: 3px; }
+  html[dir="ltr"] .breakdown li{ padding-right: 0; padding-left: 14px; }
+  html[dir="ltr"] .breakdown li::before{ right: auto; left: 0; }
+  html[dir="ltr"] .file-chip{ padding: 6px 12px 6px 8px; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="top-bar">
+    <div class="lang-toggle" id="lang-toggle" role="group" aria-label="Language">
+      <button type="button" data-lang="he" class="active" aria-label="עברית">🇮🇱</button>
+      <button type="button" data-lang="en" aria-label="English">🇺🇸</button>
+    </div>
+    <div class="theme-toggle" id="theme-toggle" role="group" aria-label="ערכת נושא">
+      <button type="button" data-theme="dark" class="active" id="theme-dark-btn">כהה</button>
+      <button type="button" data-theme="light" id="theme-light-btn">בהיר</button>
+    </div>
+  </div>
+
+  <!-- SETUP SCREEN -->
+  <section class="screen active" id="screen-setup">
+    <div class="eyebrow" id="eyebrow-setup">War Room Briefing</div>
+    <h1 id="h1-setup">סימולטור הגנת רואדמאפ</h1>
+    <p class="sub" id="sub-setup">תכף אתה נכנס לחדר. תציג החלטת רואדמאפ, תבחר מי יושב מולך — ותצטרך להגן עליה בזמן אמת. בלי תסריט, בלי רחמים.</p>
+
+    <div class="field">
+      <label class="field-label" id="label-decision">ההחלטה שאתה מגן עליה</label>
+      <textarea id="decision-input" placeholder="לדוגמה: אנחנו דוחים את פיצ'ר X ברבעון הקרוב כדי להשקיע בשיפור ביצועים של הליבה, למרות שלקוח אסטרטגי ביקש את זה במפורש."></textarea>
+
+      <div class="upload-row">
+        <label class="upload-btn" for="roadmap-file" id="upload-btn-label">📎 צרף מסמך רואדמאפ (טקסט)</label>
+        <input type="file" id="roadmap-file" accept=".txt,.md,.csv,.json" style="display:none">
+        <span class="file-chip" id="file-chip"><span id="file-chip-name"></span><button type="button" id="file-chip-remove" aria-label="הסר קובץ">✕</button></span>
+      </div>
+      <div class="upload-hint" id="upload-hint">אופציונלי - קובץ טקסט/מארקדאון/CSV. היריב יקבל אותו כהקשר לישיבה.</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label" id="label-opponent">בחר את היריב שלך</label>
+      <div class="persona-grid" id="persona-grid">
+        <div class="persona-card" data-persona="vp_sales" tabindex="0" role="button">
+          <span class="persona-icon">▲</span>
+          <div class="persona-name" id="name-vp_sales">VP מכירות</div>
+          <div class="persona-tag" id="tag-vp_sales">אגרסיבי, חי ומת על ה-pipeline, כל עיכוב זה לקוח שהולך למתחרה</div>
+        </div>
+        <div class="persona-card" data-persona="cfo" tabindex="0" role="button">
+          <span class="persona-icon">◆</span>
+          <div class="persona-name" id="name-cfo">CFO</div>
+          <div class="persona-tag" id="tag-cfo">קר, ממוקד ROI, לא מזיז שריר בלי מספרים מוצקים</div>
+        </div>
+        <div class="persona-card" data-persona="ceo" tabindex="0" role="button">
+          <span class="persona-icon">●</span>
+          <div class="persona-name" id="name-ceo">CEO</div>
+          <div class="persona-tag" id="tag-ceo">חסר סבלנות, חושב בטווח שוק ותחרות, שונא פרטים</div>
+        </div>
+        <div class="persona-card" data-persona="custom" tabindex="0" role="button">
+          <span class="persona-icon">✎</span>
+          <div class="persona-name" id="name-custom">מותאם אישית</div>
+          <div class="persona-tag" id="tag-custom">תגדיר בעצמך מי יושב מולך ואיך הוא חושב</div>
+        </div>
+      </div>
+
+      <div class="custom-fields" id="custom-fields">
+        <div>
+          <span class="mini-label" id="mini-name-label">שם התפקיד</span>
+          <input type="text" id="custom-name" placeholder="לדוגמה: ראש חטיבה מבצעית">
+        </div>
+        <div>
+          <span class="mini-label" id="mini-tagline-label">תיאור קצר (מופיע ככרטיס)</span>
+          <input type="text" id="custom-tagline" placeholder="לדוגמה: חושב מבצעית, לא סובל אי-ודאות">
+        </div>
+        <div>
+          <span class="mini-label" id="mini-behavior-label">איך הוא/היא חושבים ותוקפים?</span>
+          <textarea id="custom-behavior" placeholder="לדוגמה: חשדן כלפי כל טכנולוגיה חדשה, דורש הוכחות מהשטח, שואל 'מה קורה אם זה נכשל באמצע מבצע'..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <button class="primary" id="start-btn" disabled>היכנס לחדר →</button>
+    <div id="setup-error"></div>
+  </section>
+
+  <!-- BATTLE SCREEN -->
+  <section class="screen" id="screen-battle">
+    <div class="battle-header">
+      <div class="opponent-info">
+        <div class="opponent-avatar" id="opp-avatar">▲</div>
+        <div>
+          <div class="opponent-name" id="opp-name">VP מכירות</div>
+          <div class="opponent-role" id="opp-role">בחדר הישיבות</div>
+        </div>
+      </div>
+      <div class="gauge-wrap">
+        <div class="gauge-label">Pressure</div>
+        <div class="gauge-value" id="pressure-value" style="color: var(--teal)">30</div>
+      </div>
+    </div>
+
+    <div class="transcript" id="transcript"></div>
+
+    <div class="composer">
+      <textarea id="user-input" placeholder="הגן על ההחלטה שלך..." rows="1"></textarea>
+      <button id="send-btn">שלח</button>
+    </div>
+
+    <div class="end-note">
+      <button class="ghost" id="end-btn">סיים ועבור לתחקיר</button>
+    </div>
+    <div id="battle-error"></div>
+  </section>
+
+  <!-- DEBRIEF SCREEN -->
+  <section class="screen" id="screen-debrief">
+    <div class="eyebrow" id="eyebrow-debrief">Debrief</div>
+    <h1 id="h1-debrief">תחקיר</h1>
+    <p class="sub" id="debrief-loading">מנתח את הביצועים שלך בחדר...</p>
+
+    <div id="debrief-content" style="display:none">
+      <div class="score-card">
+        <div class="score-top">
+          <div class="score-num" id="score-num">–<span>/10</span></div>
+          <div class="verdict" id="verdict-text"></div>
+        </div>
+        <div class="breakdown">
+          <div class="breakdown strengths">
+            <h3 id="strengths-heading">מה עבד</h3>
+            <ul id="strengths-list"></ul>
+          </div>
+          <div class="breakdown weaknesses">
+            <h3 id="weaknesses-heading">איפה היית פגיע</h3>
+            <ul id="weaknesses-list"></ul>
+          </div>
+        </div>
+      </div>
+      <div class="actions-row">
+        <button class="primary" id="retry-btn">עוד סבב</button>
+        <button class="ghost" id="restart-btn">יריב אחר</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+
+  const I18N = {
+    he: {
+      pageTitle: "סימולטור הגנת רואדמאפ",
+      eyebrowSetup: "תדריך חדר מלחמה",
+      h1Setup: "סימולטור הגנת רואדמאפ",
+      subSetup: "תכף אתה נכנס לחדר. תציג החלטת רואדמאפ, תבחר מי יושב מולך — ותצטרך להגן עליה בזמן אמת. בלי תסריט, בלי רחמים.",
+      labelDecision: "ההחלטה שאתה מגן עליה",
+      decisionPh: "לדוגמה: אנחנו דוחים את פיצ'ר X ברבעון הקרוב כדי להשקיע בשיפור ביצועים של הליבה, למרות שלקוח אסטרטגי ביקש את זה במפורש.",
+      uploadBtnLabel: "📎 צרף מסמך רואדמאפ (טקסט)",
+      uploadHint: "אופציונלי - קובץ טקסט/מארקדאון/CSV. היריב יקבל אותו כהקשר לישיבה.",
+      labelOpponent: "בחר את היריב שלך",
+      personas: {
+        vp_sales: {name:"VP מכירות", tag:"אגרסיבי, חי ומת על ה-pipeline, כל עיכוב זה לקוח שהולך למתחרה", role:"לוחץ על ה-pipeline"},
+        cfo: {name:"CFO", tag:"קר, ממוקד ROI, לא מזיז שריר בלי מספרים מוצקים", role:"סופר כל שקל"},
+        ceo: {name:"CEO", tag:"חסר סבלנות, חושב בטווח שוק ותחרות, שונא פרטים", role:"חסר סבלנות, חושב שוק"},
+        custom: {name:"מותאם אישית", tag:"תגדיר בעצמך מי יושב מולך ואיך הוא חושב", role:""}
+      },
+      miniName: "שם התפקיד",
+      miniTagline: "תיאור קצר (מופיע ככרטיס)",
+      miniBehavior: "איך הוא/היא חושבים ותוקפים?",
+      customNamePh: "לדוגמה: ראש חטיבה מבצעית",
+      customTaglinePh: "לדוגמה: חושב מבצעית, לא סובל אי-ודאות",
+      customBehaviorPh: "לדוגמה: חשדן כלפי כל טכנולוגיה חדשה, דורש הוכחות מהשטח, שואל 'מה קורה אם זה נכשל באמצע מבצע'...",
+      startBtn: "היכנס לחדר →",
+      userInputPh: "הגן על ההחלטה שלך...",
+      sendBtn: "שלח",
+      endBtn: "סיים ועבור לתחקיר",
+      eyebrowDebrief: "תחקיר",
+      h1Debrief: "תחקיר",
+      debriefLoading: "מנתח את הביצועים שלך בחדר...",
+      strengthsHeading: "מה עבד",
+      weaknessesHeading: "איפה היית פגיע",
+      retryBtn: "עוד סבב",
+      restartBtn: "יריב אחר",
+      themeDark: "כהה",
+      themeLight: "בהיר",
+      errorApi: "משהו השתבש בחיבור ל-API. נסה לשלוח שוב.",
+      errorFile: "לא הצלחנו לקרוא את הקובץ. נסה קובץ טקסט אחר.",
+      errorDebrief: "לא הצלחנו לייצר תחקיר כרגע - בעיית חיבור ל-API.",
+      openingContext: (decision, fileCtx) => `זו ההחלטה שה-PM מציג בישיבה: "${decision}"${fileCtx}\n\nפתח את הישיבה עם התקפה ראשונה חדה על ההחלטה הזו.`,
+      fileContext: (name, content) => `\n\nמסמך רואדמאפ מצורף (${name}) לעיון, כרקע לישיבה:\n"""\n${content}\n"""`,
+      continueContext: "המשך את הישיבה בהתבסס על מה שנאמר עד כה.",
+      pmLabel: "PM: ",
+      debriefUserMsg: (decision, transcript) => `ההחלטה שהוצגה: "${decision}"\n\nתמליל הישיבה:\n${transcript}`,
+      debriefSystem: (name) => `אתה מאמן מנהלי מוצר ותיק שצפה בישיבה שבה PM הגן על החלטת רואדמאפ מול ${name}. תן משוב חד, כנה ומועיל - לא מנומס באופן מיותר, אבל בונה.
+
+עליך להחזיר תשובה בפורמט JSON בלבד, ללא טקסט נוסף, ללא markdown, בדיוק במבנה הבא:
+{"score": מספר שלם בין 1 ל-10, "verdict": "משפט אחד או שניים שמסכם את הביצוע, בעברית", "strengths": ["נקודת חוזק קצרה וקונקרטית 1", "נקודת חוזק 2"], "weaknesses": ["נקודת תורפה קצרה וקונקרטית 1", "נקודת תורפה 2"]}
+
+תן 2-3 נקודות בכל רשימה, מבוססות ספציפית על מה שנאמר בשיחה - לא כלליות.`
+    },
+    en: {
+      pageTitle: "Roadmap Defense Simulator",
+      eyebrowSetup: "War Room Briefing",
+      h1Setup: "Roadmap Defense Simulator",
+      subSetup: "You're about to walk into the room. Present a roadmap decision, pick who's sitting across from you — and defend it, live. No script, no mercy.",
+      labelDecision: "The decision you're defending",
+      decisionPh: "e.g. We're pushing feature X to next quarter to invest in core performance, even though a strategic customer explicitly asked for it.",
+      uploadBtnLabel: "📎 Attach roadmap document (text)",
+      uploadHint: "Optional - a text/markdown/CSV file. Your opponent will use it as context for the meeting.",
+      labelOpponent: "Choose your opponent",
+      personas: {
+        vp_sales: {name:"VP of Sales", tag:"Aggressive, lives and dies by the pipeline, every delay is a customer walking to a competitor", role:"Pushing the pipeline"},
+        cfo: {name:"CFO", tag:"Cold, ROI-obsessed, won't move a muscle without solid numbers", role:"Counts every dollar"},
+        ceo: {name:"CEO", tag:"Impatient, thinks in market and competition terms, hates details", role:"Impatient, thinks market"},
+        custom: {name:"Custom", tag:"Define who's sitting across from you and how they think", role:""}
+      },
+      miniName: "Role name",
+      miniTagline: "Short description (shown on the card)",
+      miniBehavior: "How do they think and attack?",
+      customNamePh: "e.g. Head of Operations",
+      customTaglinePh: "e.g. Thinks operationally, hates uncertainty",
+      customBehaviorPh: "e.g. Suspicious of new technology, demands field proof, asks 'what happens if this fails mid-mission'...",
+      startBtn: "Enter the room →",
+      userInputPh: "Defend your decision...",
+      sendBtn: "Send",
+      endBtn: "End & go to debrief",
+      eyebrowDebrief: "Debrief",
+      h1Debrief: "Debrief",
+      debriefLoading: "Analyzing your performance in the room...",
+      strengthsHeading: "What worked",
+      weaknessesHeading: "Where you were exposed",
+      retryBtn: "Another round",
+      restartBtn: "Different opponent",
+      themeDark: "Dark",
+      themeLight: "Light",
+      errorApi: "Something went wrong connecting to the API. Try sending again.",
+      errorFile: "Couldn't read that file. Try a different text file.",
+      errorDebrief: "Couldn't generate a debrief right now - API connection issue.",
+      openingContext: (decision, fileCtx) => `This is the decision the PM is presenting in the meeting: "${decision}"${fileCtx}\n\nOpen the meeting with a sharp first attack on this decision.`,
+      fileContext: (name, content) => `\n\nAttached roadmap document (${name}) for reference, as background for the meeting:\n"""\n${content}\n"""`,
+      continueContext: "Continue the meeting based on what's been said so far.",
+      pmLabel: "PM: ",
+      debriefUserMsg: (decision, transcript) => `The decision presented: "${decision}"\n\nMeeting transcript:\n${transcript}`,
+      debriefSystem: (name) => `You are a veteran product management coach who watched a meeting where a PM defended a roadmap decision against ${name}. Give sharp, honest, useful feedback - not overly polite, but constructive.
+
+You must return your answer in JSON format only, no extra text, no markdown, in exactly this structure:
+{"score": an integer between 1 and 10, "verdict": "one or two sentences summarizing the performance, in English", "strengths": ["short concrete strength 1", "strength 2"], "weaknesses": ["short concrete weakness 1", "weakness 2"]}
+
+Give 2-3 points in each list, based specifically on what was said in the conversation - not generic.`
+    }
+  };
+
+  const SYSTEM_PROMPTS = {
+    vp_sales: {
+      he: `אתה משחק תפקיד של VP מכירות אגרסיבי ולחוץ בישיבת רואדמאפ מוצר. הסגנון שלך: ישיר, קצת בוטה, מדבר במונחי הכנסות, לקוחות, ועסקאות שנופלות. אתה חושב שכל עיכוב במוצר עולה לחברה כסף וזמן. אתה תוקף בשאלות חדות וקונקרטיות, לא כלליות - מבוסס על מה שה-PM כתב ואמר בפועל.
+
+חוקים:
+- תגיב תמיד בעברית.
+- הישאר בתפקיד לגמרי, אל תשבור את הדמות ואל תסביר שאתה AI.
+- כל תגובה שלך היא 2-4 משפטים, חדה וממוקדת - לא נאום.
+- אם ה-PM נותן תשובה מעורפלת, כללית מדי, או בלי נתונים - תהיה יותר תוקפני והעלה את הלחץ.
+- אם ה-PM נותן תשובה חזקה עם היגיון עסקי ברור, נתונים, או trade-off מנומק - תרד קצת מהלחץ, תכיר בזה בקצרה (אבל אל תהפוך לחבר'ה נחמד מדי, אתה עדיין VP מכירות תובעני).
+- תמיד תשאל שאלת המשך אחת שממשיכה את הדיון על סמך מה שנאמר.
+- אתה חייב להחזיר תשובה בפורמט JSON בלבד, ללא טקסט נוסף, ללא markdown, בדיוק במבנה הבא:
+{"message": "התגובה שלך בעברית", "pressure_change": מספר בין -15 ל-20}`,
+      en: `You are role-playing an aggressive, stressed VP of Sales in a product roadmap meeting. Your style: direct, a bit blunt, you talk in terms of revenue, customers, and deals falling through. You believe every product delay costs the company money and time. You attack with sharp, concrete questions - not generic ones - based on what the PM actually wrote and said.
+
+Rules:
+- Always respond in English.
+- Stay fully in character, never break it or explain that you are an AI.
+- Each reply is 2-4 sentences, sharp and focused - not a speech.
+- If the PM gives a vague, overly general, or data-free answer - become more aggressive and raise the pressure.
+- If the PM gives a strong answer with clear business logic, data, or a well-reasoned trade-off - ease off the pressure a bit, acknowledge it briefly (but don't become too friendly, you're still a demanding VP of Sales).
+- Always ask one follow-up question that continues the discussion based on what was said.
+- You must return your answer in JSON format only, no extra text, no markdown, in exactly this structure:
+{"message": "your reply in English", "pressure_change": a number between -15 and 20}`
+    },
+    cfo: {
+      he: `אתה משחק תפקיד של CFO קר, מדויק וסקפטי בישיבת רואדמאפ מוצר. הסגנון שלך: שקט, ממוקד מספרים, ROI, עלות הזדמנות. אתה לא מתרגש ולא צועק - אתה פשוט שואל שאלות שממש קשה לענות עליהן בלי נתונים מוצקים.
+
+חוקים:
+- תגיב תמיד בעברית.
+- הישאר בתפקיד לגמרי, אל תשבור את הדמות ואל תסביר שאתה AI.
+- כל תגובה שלך היא 2-4 משפטים, חדים וממוקדים - לא נאום.
+- אם ה-PM נותן תשובה בלי מספרים, בלי הערכת עלות/תועלת, או בלי לוגיקה עסקית ברורה - תהפוך לחשדן יותר ותעלה את הלחץ.
+- אם ה-PM נותן תשובה עם היגיון כלכלי ברור או הערכה כמותית סבירה - תרד קצת מהלחץ, תכיר בזה בקצרה ובקרירות.
+- תמיד תשאל שאלת המשך אחת שממשיכה את הדיון על סמך מה שנאמר.
+- אתה חייב להחזיר תשובה בפורמט JSON בלבד, ללא טקסט נוסף, ללא markdown, בדיוק במבנה הבא:
+{"message": "התגובה שלך בעברית", "pressure_change": מספר בין -15 ל-20}`,
+      en: `You are role-playing a cold, precise, skeptical CFO in a product roadmap meeting. Your style: quiet, focused on numbers, ROI, opportunity cost. You don't get excited or raise your voice - you just ask questions that are genuinely hard to answer without solid data.
+
+Rules:
+- Always respond in English.
+- Stay fully in character, never break it or explain that you are an AI.
+- Each reply is 2-4 sentences, sharp and focused - not a speech.
+- If the PM gives an answer without numbers, without cost/benefit estimates, or without clear business logic - become more suspicious and raise the pressure.
+- If the PM gives an answer with clear economic logic or a reasonable quantitative estimate - ease off the pressure a bit, acknowledge it briefly and coolly.
+- Always ask one follow-up question that continues the discussion based on what was said.
+- You must return your answer in JSON format only, no extra text, no markdown, in exactly this structure:
+{"message": "your reply in English", "pressure_change": a number between -15 and 20}`
+    },
+    ceo: {
+      he: `אתה משחק תפקיד של CEO חסר סבלנות בישיבת רואדמאפ מוצר. הסגנון שלך: קצר, ישיר, חושב בטווח שוק ותחרות ולא בפרטים טכניים. אתה שונא הסברים ארוכים ורוצה תשובות ברורות מהר.
+
+חוקים:
+- תגיב תמיד בעברית.
+- הישאר בתפקיד לגמרי, אל תשבור את הדמות ואל תסביר שאתה AI.
+- כל תגובה שלך היא 1-3 משפטים בלבד - קצר וחד, אתה CEO עסוק.
+- אם ה-PM נותן תשובה מסורבלת, לא ברורה, או שלא עונה ישירות על השאלה - תהיה יותר חסר סבלנות ותעלה את הלחץ.
+- אם ה-PM נותן תשובה ברורה, קצרה וממוקדת עם השפעה עסקית ברורה - תרד קצת מהלחץ, תגיד את זה בקצרה.
+- תמיד תשאל שאלת המשך אחת שממשיכה את הדיון על סמך מה שנאמר.
+- אתה חייב להחזיר תשובה בפורמט JSON בלבד, ללא טקסט נוסף, ללא markdown, בדיוק במבנה הבא:
+{"message": "התגובה שלך בעברית", "pressure_change": מספר בין -15 ל-20}`,
+      en: `You are role-playing an impatient CEO in a product roadmap meeting. Your style: short, direct, you think in terms of market and competition, not technical details. You hate long explanations and want clear answers fast.
+
+Rules:
+- Always respond in English.
+- Stay fully in character, never break it or explain that you are an AI.
+- Each reply is 1-3 sentences only - short and sharp, you're a busy CEO.
+- If the PM gives a rambling, unclear answer, or one that doesn't directly answer the question - become more impatient and raise the pressure.
+- If the PM gives a clear, short, focused answer with clear business impact - ease off the pressure a bit, say so briefly.
+- Always ask one follow-up question that continues the discussion based on what was said.
+- You must return your answer in JSON format only, no extra text, no markdown, in exactly this structure:
+{"message": "your reply in English", "pressure_change": a number between -15 and 20}`
+    }
+  };
+
+  const PERSONAS = {
+    vp_sales: { icon: "▲", he: {...I18N.he.personas.vp_sales, system: SYSTEM_PROMPTS.vp_sales.he}, en: {...I18N.en.personas.vp_sales, system: SYSTEM_PROMPTS.vp_sales.en} },
+    cfo: { icon: "◆", he: {...I18N.he.personas.cfo, system: SYSTEM_PROMPTS.cfo.he}, en: {...I18N.en.personas.cfo, system: SYSTEM_PROMPTS.cfo.en} },
+    ceo: { icon: "●", he: {...I18N.he.personas.ceo, system: SYSTEM_PROMPTS.ceo.he}, en: {...I18N.en.personas.ceo, system: SYSTEM_PROMPTS.ceo.en} }
+  };
+
+  let state = {
+    lang: 'he',
+    persona: null,
+    decision: "",
+    pressure: 30,
+    history: [], // {role: 'user'|'assistant', content: string}
+    fileName: "",
+    fileContent: ""
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const screens = {
+    setup: $('screen-setup'),
+    battle: $('screen-battle'),
+    debrief: $('screen-debrief')
+  };
+
+  function showScreen(name){
+    Object.values(screens).forEach(s => s.classList.remove('active'));
+    screens[name].classList.add('active');
+  }
+
+  function t(){ return I18N[state.lang]; }
+
+  function getPersona(key){
+    if(key === 'custom') return PERSONAS.custom; // flat, built once at start time
+    const p = PERSONAS[key];
+    return { icon: p.icon, name: p[state.lang].name, role: p[state.lang].role, system: p[state.lang].system };
+  }
+
+  // ---- Theme toggle ----
+  const themeToggle = $('theme-toggle');
+  themeToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-theme]');
+    if(!btn) return;
+    const theme = btn.dataset.theme;
+    document.body.classList.toggle('theme-light', theme === 'light');
+    [...themeToggle.children].forEach(b => b.classList.toggle('active', b === btn));
+  });
+
+  // ---- Language toggle ----
+  const langToggle = $('lang-toggle');
+  langToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-lang]');
+    if(!btn) return;
+    setLanguage(btn.dataset.lang);
+    [...langToggle.children].forEach(b => b.classList.toggle('active', b === btn));
+  });
+
+  function setLanguage(lang){
+    state.lang = lang;
+    const tr = I18N[lang];
+    document.documentElement.setAttribute('lang', lang);
+    document.documentElement.setAttribute('dir', lang === 'he' ? 'rtl' : 'ltr');
+    document.title = tr.pageTitle;
+
+    $('eyebrow-setup').textContent = tr.eyebrowSetup;
+    $('h1-setup').textContent = tr.h1Setup;
+    $('sub-setup').textContent = tr.subSetup;
+    $('label-decision').textContent = tr.labelDecision;
+    $('decision-input').placeholder = tr.decisionPh;
+    $('upload-btn-label').textContent = tr.uploadBtnLabel;
+    $('upload-hint').textContent = tr.uploadHint;
+    $('label-opponent').textContent = tr.labelOpponent;
+
+    ['vp_sales','cfo','ceo','custom'].forEach(key => {
+      $('name-' + key).textContent = tr.personas[key].name;
+      $('tag-' + key).textContent = tr.personas[key].tag;
+    });
+
+    $('mini-name-label').textContent = tr.miniName;
+    $('mini-tagline-label').textContent = tr.miniTagline;
+    $('mini-behavior-label').textContent = tr.miniBehavior;
+    $('custom-name').placeholder = tr.customNamePh;
+    $('custom-tagline').placeholder = tr.customTaglinePh;
+    $('custom-behavior').placeholder = tr.customBehaviorPh;
+
+    $('start-btn').textContent = tr.startBtn;
+    $('user-input').placeholder = tr.userInputPh;
+    $('send-btn').textContent = tr.sendBtn;
+    $('end-btn').textContent = tr.endBtn;
+
+    $('eyebrow-debrief').textContent = tr.eyebrowDebrief;
+    $('h1-debrief').textContent = tr.h1Debrief;
+    $('debrief-loading').textContent = tr.debriefLoading;
+    $('strengths-heading').textContent = tr.strengthsHeading;
+    $('weaknesses-heading').textContent = tr.weaknessesHeading;
+    $('retry-btn').textContent = tr.retryBtn;
+    $('restart-btn').textContent = tr.restartBtn;
+
+    $('theme-dark-btn').textContent = tr.themeDark;
+    $('theme-light-btn').textContent = tr.themeLight;
+  }
+
+  // ---- File upload ----
+  const roadmapFileInput = $('roadmap-file');
+  const fileChip = $('file-chip');
+  const fileChipName = $('file-chip-name');
+
+  roadmapFileInput.addEventListener('change', () => {
+    const file = roadmapFileInput.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      state.fileName = file.name;
+      state.fileContent = String(e.target.result).slice(0, 12000); // cap length
+      fileChipName.textContent = file.name;
+      fileChip.classList.add('visible');
+    };
+    reader.onerror = () => {
+      $('setup-error').innerHTML = '<div class="error-box">' + t().errorFile + '</div>';
+    };
+    reader.readAsText(file);
+  });
+
+  $('file-chip-remove').addEventListener('click', () => {
+    state.fileName = "";
+    state.fileContent = "";
+    roadmapFileInput.value = "";
+    fileChip.classList.remove('visible');
+  });
+
+  // ---- Setup screen logic ----
+  const personaGrid = $('persona-grid');
+  const startBtn = $('start-btn');
+  const decisionInput = $('decision-input');
+
+  const customFields = $('custom-fields');
+  const customName = $('custom-name');
+  const customTagline = $('custom-tagline');
+  const customBehavior = $('custom-behavior');
+
+  function selectPersona(key){
+    state.persona = key;
+    [...personaGrid.children].forEach(c => c.classList.toggle('selected', c.dataset.persona === key));
+    customFields.classList.toggle('visible', key === 'custom');
+    updateStartBtn();
+  }
+
+  personaGrid.addEventListener('click', (e) => {
+    const card = e.target.closest('.persona-card');
+    if(card) selectPersona(card.dataset.persona);
+  });
+  personaGrid.addEventListener('keydown', (e) => {
+    if((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('persona-card')){
+      e.preventDefault();
+      selectPersona(e.target.dataset.persona);
+    }
+  });
+
+  function buildCustomPersona(){
+    const lang = state.lang;
+    const name = customName.value.trim() || (lang === 'he' ? "יריב מותאם אישית" : "Custom opponent");
+    const tagline = customTagline.value.trim() || (lang === 'he' ? "פרסונה מותאמת אישית" : "Custom persona");
+    const behavior = customBehavior.value.trim();
+
+    const system = lang === 'he'
+      ? `אתה משחק תפקיד של "${name}" בישיבת רואדמאפ מוצר. תיאור התפקיד: ${tagline}.
+
+אופן החשיבה וההתקפה שלך, כפי שהוגדר: ${behavior || "תוקף באופן ענייני וחד לפי הגיון תפקידו."}
+
+חוקים:
+- תגיב תמיד בעברית.
+- הישאר בתפקיד לגמרי, אל תשבור את הדמות ואל תסביר שאתה AI.
+- כל תגובה שלך היא 2-4 משפטים, חדה וממוקדת - לא נאום.
+- אם ה-PM נותן תשובה מעורפלת, כללית מדי, או בלי ביסוס - תהיה יותר תוקפני והעלה את הלחץ, בהתאם לאופי שהוגדר לך.
+- אם ה-PM נותן תשובה חזקה ומבוססת - תרד קצת מהלחץ, תכיר בזה בקצרה, אבל הישאר נאמן לאופי שהוגדר לך.
+- תמיד תשאל שאלת המשך אחת שממשיכה את הדיון על סמך מה שנאמר.
+- אתה חייב להחזיר תשובה בפורמט JSON בלבד, ללא טקסט נוסף, ללא markdown, בדיוק במבנה הבא:
+{"message": "התגובה שלך בעברית", "pressure_change": מספר בין -15 ל-20}`
+      : `You are role-playing "${name}" in a product roadmap meeting. Role description: ${tagline}.
+
+How you think and attack, as defined: ${behavior || "Attacks in a sharp, matter-of-fact way consistent with the role."}
+
+Rules:
+- Always respond in English.
+- Stay fully in character, never break it or explain that you are an AI.
+- Each reply is 2-4 sentences, sharp and focused - not a speech.
+- If the PM gives a vague, overly general, or unsupported answer - become more aggressive and raise the pressure, consistent with the character defined for you.
+- If the PM gives a strong, well-supported answer - ease off the pressure a bit, acknowledge it briefly, but stay true to the character defined for you.
+- Always ask one follow-up question that continues the discussion based on what was said.
+- You must return your answer in JSON format only, no extra text, no markdown, in exactly this structure:
+{"message": "your reply in English", "pressure_change": a number between -15 and 20}`;
+
+    PERSONAS.custom = { icon: "✎", name: name, role: tagline, system: system };
+  }
+
+  function updateStartBtn(){
+    const hasDecision = decisionInput.value.trim().length > 8;
+    const personaOk = state.persona && (state.persona !== 'custom' || customBehavior.value.trim().length > 5);
+    startBtn.disabled = !(hasDecision && personaOk);
+  }
+  decisionInput.addEventListener('input', updateStartBtn);
+  customName.addEventListener('input', updateStartBtn);
+  customTagline.addEventListener('input', updateStartBtn);
+  customBehavior.addEventListener('input', updateStartBtn);
+
+  startBtn.addEventListener('click', async () => {
+    if(state.persona === 'custom') buildCustomPersona();
+    state.decision = decisionInput.value.trim();
+    state.history = [];
+    state.pressure = 30;
+    const p = getPersona(state.persona);
+    $('opp-avatar').textContent = p.icon;
+    $('opp-name').textContent = p.name;
+    $('opp-role').textContent = p.role;
+    $('transcript').innerHTML = '';
+    updateGauge();
+    showScreen('battle');
+
+    // Kick off with opponent's opening attack
+    await requestOpponentTurn(true);
+  });
+
+  // ---- Battle screen logic ----
+  const transcript = $('transcript');
+  const userInput = $('user-input');
+  const sendBtn = $('send-btn');
+  const pressureValue = $('pressure-value');
+
+  function addMessage(role, text){
+    const wrap = document.createElement('div');
+    wrap.className = 'msg ' + (role === 'user' ? 'user' : 'opp');
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    wrap.appendChild(bubble);
+    transcript.appendChild(wrap);
+    transcript.scrollTop = transcript.scrollHeight;
+  }
+
+  function showTyping(){
+    const el = document.createElement('div');
+    el.className = 'typing';
+    el.id = 'typing-indicator';
+    el.innerHTML = '<span></span><span></span><span></span>';
+    transcript.appendChild(el);
+    transcript.scrollTop = transcript.scrollHeight;
+  }
+  function hideTyping(){
+    const el = $('typing-indicator');
+    if(el) el.remove();
+  }
+
+  function updateGauge(){
+    state.pressure = Math.max(0, Math.min(100, state.pressure));
+    pressureValue.textContent = Math.round(state.pressure);
+    let color = 'var(--teal)';
+    if(state.pressure >= 70) color = 'var(--red)';
+    else if(state.pressure >= 40) color = 'var(--amber)';
+    pressureValue.style.color = color;
+  }
+
+  function safeParseJSON(text){
+    let cleaned = text.trim().replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
+    try{
+      return JSON.parse(cleaned);
+    }catch(e){
+      const match = cleaned.match(/\{[\s\S]*\}/);
+      if(match){
+        try{ return JSON.parse(match[0]); }catch(e2){ return null; }
+      }
+      return null;
+    }
+  }
+
+  async function callClaude(systemPrompt, messages){
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: messages
+      })
+    });
+    if(!response.ok){
+      throw new Error("API request failed: " + response.status);
+    }
+    const data = await response.json();
+    const textBlock = data.content.find(b => b.type === 'text');
+    return textBlock ? textBlock.text : "";
+  }
+
+  async function requestOpponentTurn(isOpening){
+    showTyping();
+    sendBtn.disabled = true;
+    userInput.disabled = true;
+    $('battle-error').innerHTML = '';
+
+    const p = getPersona(state.persona);
+    const tr = t();
+    const fileContext = state.fileContent ? tr.fileContext(state.fileName, state.fileContent) : "";
+    const contextMsg = isOpening
+      ? tr.openingContext(state.decision, fileContext)
+      : tr.continueContext;
+
+    const apiMessages = [
+      ...state.history,
+      { role: 'user', content: contextMsg }
+    ];
+
+    try{
+      const raw = await callClaude(p.system, apiMessages);
+      const parsed = safeParseJSON(raw);
+      hideTyping();
+
+      const message = parsed && parsed.message ? parsed.message : raw;
+      const delta = parsed && typeof parsed.pressure_change === 'number' ? parsed.pressure_change : 0;
+
+      addMessage('assistant', message);
+      state.history.push({ role: 'user', content: contextMsg });
+      state.history.push({ role: 'assistant', content: message });
+      state.pressure += delta;
+      updateGauge();
+    }catch(err){
+      hideTyping();
+      $('battle-error').innerHTML = '<div class="error-box">' + t().errorApi + '</div>';
+    }finally{
+      sendBtn.disabled = false;
+      userInput.disabled = false;
+      userInput.focus();
+    }
+  }
+
+  async function sendUserTurn(){
+    const text = userInput.value.trim();
+    if(!text) return;
+    addMessage('user', text);
+    userInput.value = '';
+    autoResize();
+
+    const p = getPersona(state.persona);
+    const apiMessages = [...state.history, { role: 'user', content: text }];
+
+    showTyping();
+    sendBtn.disabled = true;
+    userInput.disabled = true;
+    $('battle-error').innerHTML = '';
+
+    try{
+      const raw = await callClaude(p.system, apiMessages);
+      const parsed = safeParseJSON(raw);
+      hideTyping();
+
+      const message = parsed && parsed.message ? parsed.message : raw;
+      const delta = parsed && typeof parsed.pressure_change === 'number' ? parsed.pressure_change : 0;
+
+      state.history.push({ role: 'user', content: text });
+      state.history.push({ role: 'assistant', content: message });
+      addMessage('assistant', message);
+      state.pressure += delta;
+      updateGauge();
+    }catch(err){
+      hideTyping();
+      $('battle-error').innerHTML = '<div class="error-box">' + t().errorApi + '</div>';
+    }finally{
+      sendBtn.disabled = false;
+      userInput.disabled = false;
+      userInput.focus();
+    }
+  }
+
+  sendBtn.addEventListener('click', sendUserTurn);
+  userInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      sendUserTurn();
+    }
+  });
+  function autoResize(){
+    userInput.style.height = 'auto';
+    userInput.style.height = Math.min(140, userInput.scrollHeight) + 'px';
+  }
+  userInput.addEventListener('input', autoResize);
+
+  // ---- Debrief screen logic ----
+  $('end-btn').addEventListener('click', runDebrief);
+
+  async function runDebrief(){
+    showScreen('debrief');
+    $('debrief-loading').style.display = 'block';
+    $('debrief-content').style.display = 'none';
+
+    const p = getPersona(state.persona);
+    const tr = t();
+    const transcriptText = state.history
+      .filter(m => m.role === 'assistant' || (m.role === 'user' && m.content !== tr.continueContext && !m.content.startsWith(tr.openingContext('', '').split('"')[0])))
+      .map(m => (m.role === 'user' ? tr.pmLabel : p.name + ': ') + m.content)
+      .join('\n');
+
+    const debriefSystem = tr.debriefSystem(p.name);
+
+    try{
+      const raw = await callClaude(debriefSystem, [
+        { role: 'user', content: tr.debriefUserMsg(state.decision, transcriptText) }
+      ]);
+      const parsed = safeParseJSON(raw);
+      $('debrief-loading').style.display = 'none';
+      $('debrief-content').style.display = 'block';
+
+      if(parsed){
+        $('score-num').innerHTML = (parsed.score || '–') + '<span>/10</span>';
+        $('verdict-text').textContent = parsed.verdict || '';
+        $('strengths-list').innerHTML = (parsed.strengths || []).map(s => `<li>${escapeHtml(s)}</li>`).join('');
+        $('weaknesses-list').innerHTML = (parsed.weaknesses || []).map(s => `<li>${escapeHtml(s)}</li>`).join('');
+      }else{
+        $('verdict-text').textContent = raw;
+      }
+    }catch(err){
+      $('debrief-loading').style.display = 'none';
+      $('debrief-content').style.display = 'block';
+      $('verdict-text').textContent = t().errorDebrief;
+    }
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  $('retry-btn').addEventListener('click', () => {
+    state.history = [];
+    state.pressure = 30;
+    transcript.innerHTML = '';
+    updateGauge();
+    showScreen('battle');
+    requestOpponentTurn(true);
+  });
+
+  $('restart-btn').addEventListener('click', () => {
+    state.persona = null;
+    state.history = [];
+    [...personaGrid.children].forEach(c => c.classList.remove('selected'));
+    customFields.classList.remove('visible');
+    updateStartBtn();
+    showScreen('setup');
+  });
+
+  // ---- Init ----
+  setLanguage('he');
+
+})();
+</script>
+</body>
+</html>
