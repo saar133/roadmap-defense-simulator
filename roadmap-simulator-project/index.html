@@ -334,6 +334,39 @@
     margin-top: 6px;
   }
 
+  .gdocs-row{
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .gdocs-input{
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 13px;
+    padding: 10px 13px;
+  }
+  .gdocs-input::placeholder{ color: var(--text-faint); }
+  .gdocs-input:focus{ outline: none; border-color: var(--amber); }
+  .gdocs-btn{
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 8px;
+    padding: 0 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .gdocs-btn:hover{ border-color: var(--amber); color: var(--text); }
+  .gdocs-btn:disabled{ opacity: 0.5; cursor: not-allowed; }
+
+
   button.primary{
     font-family: var(--font-display);
     font-weight: 600;
@@ -569,6 +602,52 @@
     margin-top: 14px;
     line-height: 1.5;
   }
+  .error-box .retry-inline{
+    display: inline-block;
+    margin-top: 8px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: transparent;
+    border: 1px solid rgba(214,69,69,0.4);
+    color: var(--red);
+    border-radius: 6px;
+    padding: 5px 12px;
+    cursor: pointer;
+  }
+  .error-box .retry-inline:hover{ background: rgba(214,69,69,0.15); }
+
+  .msg-counter{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    text-align: center;
+    margin-bottom: 6px;
+  }
+
+  .persuasion-badge{
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 18px;
+    background: rgba(214,69,69,0.1);
+    border: 1px solid rgba(214,69,69,0.3);
+    color: var(--red);
+  }
+
+  .site-footer{
+    text-align: center;
+    padding: 18px 0 28px;
+  }
+  .site-footer a{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    text-decoration: none;
+    letter-spacing: 0.04em;
+    transition: color 0.15s;
+  }
+  .site-footer a:hover{ color: var(--amber); }
 
   ::-webkit-scrollbar{ width: 8px; }
   ::-webkit-scrollbar-track{ background: transparent; }
@@ -614,11 +693,17 @@
       <textarea id="decision-input" placeholder="לדוגמה: אנחנו דוחים את פיצ'ר X ברבעון הקרוב כדי להשקיע בשיפור ביצועים של הליבה, למרות שלקוח אסטרטגי ביקש את זה במפורש."></textarea>
 
       <div class="upload-row">
-        <label class="upload-btn" for="roadmap-file" id="upload-btn-label">📎 צרף מסמך רואדמאפ (טקסט)</label>
-        <input type="file" id="roadmap-file" accept=".txt,.md,.csv,.json" style="display:none">
+        <label class="upload-btn" for="roadmap-file" id="upload-btn-label">📎 צרף מסמך רואדמאפ (Word / Excel / PowerPoint / טקסט)</label>
+        <input type="file" id="roadmap-file" accept=".txt,.md,.csv,.json,.docx,.xlsx,.xls,.pptx" style="display:none">
         <span class="file-chip" id="file-chip"><span id="file-chip-name"></span><button type="button" id="file-chip-remove" aria-label="הסר קובץ">✕</button></span>
       </div>
-      <div class="upload-hint" id="upload-hint">אופציונלי - קובץ טקסט/מארקדאון/CSV. היריב יקבל אותו כהקשר לישיבה.</div>
+      <div class="upload-hint" id="upload-hint">אופציונלי - Word, Excel, PowerPoint, טקסט, מארקדאון או CSV. היריב יקבל את התוכן כהקשר לישיבה.</div>
+
+      <div class="gdocs-row">
+        <input type="text" id="gdocs-link-input" class="gdocs-input" placeholder="או הדבק קישור ל-Google Docs / Slides">
+        <button type="button" class="gdocs-btn" id="gdocs-import-btn">ייבא</button>
+      </div>
+      <div class="upload-hint" id="gdocs-hint">הקובץ ב-Google Docs/Slides חייב להיות משותף כ-"כל מי שיש לו את הקישור יכול לצפות".</div>
     </div>
 
     <div class="field">
@@ -690,6 +775,7 @@
     </div>
 
     <div class="end-note">
+      <div class="msg-counter" id="msg-counter"></div>
       <button class="ghost" id="end-btn">סיים ועבור לתחקיר</button>
     </div>
     <div id="battle-error"></div>
@@ -707,6 +793,7 @@
           <div class="score-num" id="score-num">–<span>/10</span></div>
           <div class="verdict" id="verdict-text"></div>
         </div>
+        <div class="persuasion-badge" id="persuasion-badge" style="display:none"></div>
         <div class="breakdown">
           <div class="breakdown strengths">
             <h3 id="strengths-heading">מה עבד</h3>
@@ -722,11 +809,19 @@
         <button class="primary" id="retry-btn">עוד סבב</button>
         <button class="ghost" id="restart-btn">יריב אחר</button>
       </div>
+      <button class="ghost" id="copy-results-btn" style="width:100%; margin-top:10px;">העתק תוצאות</button>
     </div>
   </section>
 
 </div>
 
+<footer class="site-footer">
+  <a href="https://www.linkedin.com/in/saar-shwartz-07317431b" target="_blank" rel="noopener noreferrer" id="footer-credit">Built by Saar Shwartz</a>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function(){
 
@@ -738,8 +833,17 @@
       subSetup: "תכף אתה נכנס לחדר. תציג החלטת רואדמאפ, תבחר מי יושב מולך — ותצטרך להגן עליה בזמן אמת. בלי תסריט, בלי רחמים.",
       labelDecision: "ההחלטה שאתה מגן עליה",
       decisionPh: "לדוגמה: אנחנו דוחים את פיצ'ר X ברבעון הקרוב כדי להשקיע בשיפור ביצועים של הליבה, למרות שלקוח אסטרטגי ביקש את זה במפורש.",
-      uploadBtnLabel: "📎 צרף מסמך רואדמאפ (טקסט)",
-      uploadHint: "אופציונלי - קובץ טקסט/מארקדאון/CSV. היריב יקבל אותו כהקשר לישיבה.",
+      uploadBtnLabel: "📎 צרף מסמך רואדמאפ (Word / Excel / PowerPoint / טקסט)",
+      uploadHint: "אופציונלי - Word, Excel, PowerPoint, טקסט, מארקדאון או CSV. היריב יקבל את התוכן כהקשר לישיבה.",
+      gdocsPlaceholder: "או הדבק קישור ל-Google Docs / Slides",
+      gdocsBtn: "ייבא",
+      gdocsBtnLoading: "מייבא...",
+      gdocsHint: "הקובץ ב-Google Docs/Slides חייב להיות משותף כ-\"כל מי שיש לו את הקישור יכול לצפות\".",
+      processingFile: "מעבד קובץ...",
+      errorUnsupportedFile: "סוג קובץ לא נתמך. אפשר להעלות Word, Excel, PowerPoint, טקסט, מארקדאון או CSV.",
+      errorParsingFile: "לא הצלחנו לקרוא את תוכן הקובץ. נסה קובץ אחר.",
+      errorGdocsInvalid: "זה לא נראה כמו קישור תקין ל-Google Docs או Google Slides.",
+      errorGdocsFetch: "לא הצלחנו לייבא את המסמך. וודא שהוא משותף כ-\"כל מי שיש לו את הקישור\", ושהאתר פרוס (התכונה הזו לא עובדת בתצוגה המקדימה כאן בצ'אט - רק אחרי פריסה ל-Vercel).",
       labelOpponent: "בחר את היריב שלך",
       personas: {
         vp_sales: {name:"VP מכירות", tag:"אגרסיבי, חי ומת על ה-pipeline, כל עיכוב זה לקוח שהולך למתחרה", role:"לוחץ על ה-pipeline"},
@@ -767,8 +871,16 @@
       themeDark: "כהה",
       themeLight: "בהיר",
       errorApi: "משהו השתבש בחיבור ל-API. נסה לשלוח שוב.",
+      errorApiRateLimit: "יותר מדי בקשות ברצף - חכה כמה שניות ונסה שוב.",
+      errorApiServer: "שרת ה-API לא זמין כרגע. נסה שוב בעוד רגע.",
+      retryInline: "נסה שוב",
       errorFile: "לא הצלחנו לקרוא את הקובץ. נסה קובץ טקסט אחר.",
       errorDebrief: "לא הצלחנו לייצר תחקיר כרגע - בעיית חיבור ל-API.",
+      msgCounter: (used, max) => `${used} / ${max} הודעות`,
+      msgLimitNote: "הגעת למגבלת ההודעות למפגש. עוברים לתחקיר...",
+      persuasionFail: "עדיין לא שכנעת - נראה שהטיעונים שלך לא היו מספיק חזקים 😏",
+      copyResultsBtn: "העתק תוצאות",
+      copyResultsCopied: "הועתק ✓",
       openingContext: (decision, fileCtx) => `זו ההחלטה שה-PM מציג בישיבה: "${decision}"${fileCtx}\n\nפתח את הישיבה עם התקפה ראשונה חדה על ההחלטה הזו.`,
       fileContext: (name, content) => `\n\nמסמך רואדמאפ מצורף (${name}) לעיון, כרקע לישיבה:\n"""\n${content}\n"""`,
       continueContext: "המשך את הישיבה בהתבסס על מה שנאמר עד כה.",
@@ -788,8 +900,17 @@
       subSetup: "You're about to walk into the room. Present a roadmap decision, pick who's sitting across from you — and defend it, live. No script, no mercy.",
       labelDecision: "The decision you're defending",
       decisionPh: "e.g. We're pushing feature X to next quarter to invest in core performance, even though a strategic customer explicitly asked for it.",
-      uploadBtnLabel: "📎 Attach roadmap document (text)",
-      uploadHint: "Optional - a text/markdown/CSV file. Your opponent will use it as context for the meeting.",
+      uploadBtnLabel: "📎 Attach roadmap document (Word / Excel / PowerPoint / text)",
+      uploadHint: "Optional - Word, Excel, PowerPoint, text, markdown, or CSV. Your opponent will use the content as context for the meeting.",
+      gdocsPlaceholder: "or paste a Google Docs / Slides link",
+      gdocsBtn: "Import",
+      gdocsBtnLoading: "Importing...",
+      gdocsHint: "The Google Docs/Slides file must be shared as \"Anyone with the link can view\".",
+      processingFile: "Processing file...",
+      errorUnsupportedFile: "Unsupported file type. You can upload Word, Excel, PowerPoint, text, markdown, or CSV.",
+      errorParsingFile: "Couldn't read that file's content. Try a different file.",
+      errorGdocsInvalid: "That doesn't look like a valid Google Docs or Google Slides link.",
+      errorGdocsFetch: "Couldn't import the document. Make sure it's shared as \"Anyone with the link\", and that the site is deployed (this feature doesn't work in the chat preview here - only after deploying to Vercel).",
       labelOpponent: "Choose your opponent",
       personas: {
         vp_sales: {name:"VP of Sales", tag:"Aggressive, lives and dies by the pipeline, every delay is a customer walking to a competitor", role:"Pushing the pipeline"},
@@ -817,8 +938,16 @@
       themeDark: "Dark",
       themeLight: "Light",
       errorApi: "Something went wrong connecting to the API. Try sending again.",
+      errorApiRateLimit: "Too many requests in a row - wait a few seconds and try again.",
+      errorApiServer: "The API server is unavailable right now. Try again in a moment.",
+      retryInline: "Retry",
       errorFile: "Couldn't read that file. Try a different text file.",
       errorDebrief: "Couldn't generate a debrief right now - API connection issue.",
+      msgCounter: (used, max) => `${used} / ${max} messages`,
+      msgLimitNote: "You've reached the message limit for this session. Moving to debrief...",
+      persuasionFail: "You haven't persuaded them yet - looks like your arguments weren't strong enough 😏",
+      copyResultsBtn: "Copy results",
+      copyResultsCopied: "Copied ✓",
       openingContext: (decision, fileCtx) => `This is the decision the PM is presenting in the meeting: "${decision}"${fileCtx}\n\nOpen the meeting with a sharp first attack on this decision.`,
       fileContext: (name, content) => `\n\nAttached roadmap document (${name}) for reference, as background for the meeting:\n"""\n${content}\n"""`,
       continueContext: "Continue the meeting based on what's been said so far.",
@@ -914,6 +1043,8 @@ Rules:
     ceo: { icon: "●", he: {...I18N.he.personas.ceo, system: SYSTEM_PROMPTS.ceo.he}, en: {...I18N.en.personas.ceo, system: SYSTEM_PROMPTS.ceo.en} }
   };
 
+  const MAX_USER_MESSAGES = 10;
+
   let state = {
     lang: 'he',
     persona: null,
@@ -921,7 +1052,8 @@ Rules:
     pressure: 30,
     history: [], // {role: 'user'|'assistant', content: string}
     fileName: "",
-    fileContent: ""
+    fileContent: "",
+    userMessageCount: 0
   };
 
   const $ = (id) => document.getElementById(id);
@@ -977,6 +1109,9 @@ Rules:
     $('decision-input').placeholder = tr.decisionPh;
     $('upload-btn-label').textContent = tr.uploadBtnLabel;
     $('upload-hint').textContent = tr.uploadHint;
+    $('gdocs-link-input').placeholder = tr.gdocsPlaceholder;
+    $('gdocs-import-btn').textContent = tr.gdocsBtn;
+    $('gdocs-hint').textContent = tr.gdocsHint;
     $('label-opponent').textContent = tr.labelOpponent;
 
     ['vp_sales','cfo','ceo','custom'].forEach(key => {
@@ -1003,30 +1138,138 @@ Rules:
     $('weaknesses-heading').textContent = tr.weaknessesHeading;
     $('retry-btn').textContent = tr.retryBtn;
     $('restart-btn').textContent = tr.restartBtn;
+    $('copy-results-btn').textContent = tr.copyResultsBtn;
+    updateMsgCounter();
 
     $('theme-dark-btn').textContent = tr.themeDark;
     $('theme-light-btn').textContent = tr.themeLight;
   }
 
-  // ---- File upload ----
+  // ---- File upload (multi-format) ----
   const roadmapFileInput = $('roadmap-file');
   const fileChip = $('file-chip');
   const fileChipName = $('file-chip-name');
+  const uploadBtnLabelEl = $('upload-btn-label');
+  const gdocsInput = $('gdocs-link-input');
+  const gdocsBtn = $('gdocs-import-btn');
 
-  roadmapFileInput.addEventListener('change', () => {
+  function readAsText(file){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(String(e.target.result));
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+  }
+
+  async function extractDocx(file){
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer });
+    return result.value;
+  }
+
+  async function extractXlsx(file){
+    const arrayBuffer = await file.arrayBuffer();
+    const wb = XLSX.read(arrayBuffer, { type: 'array' });
+    let text = '';
+    wb.SheetNames.forEach(name => {
+      const csv = XLSX.utils.sheet_to_csv(wb.Sheets[name]);
+      text += `\n--- ${name} ---\n` + csv;
+    });
+    return text;
+  }
+
+  async function extractPptx(file){
+    const arrayBuffer = await file.arrayBuffer();
+    const zip = await JSZip.loadAsync(arrayBuffer);
+    const slideFiles = Object.keys(zip.files)
+      .filter(n => /^ppt\/slides\/slide\d+\.xml$/.test(n))
+      .sort((a, b) => {
+        const na = parseInt(a.match(/slide(\d+)\.xml/)[1], 10);
+        const nb = parseInt(b.match(/slide(\d+)\.xml/)[1], 10);
+        return na - nb;
+      });
+    let text = '';
+    let i = 1;
+    for (const fname of slideFiles) {
+      const xml = await zip.files[fname].async('text');
+      const lines = [...xml.matchAll(/<a:t>([^<]*)<\/a:t>/g)].map(m => m[1]);
+      text += `\n--- Slide ${i++} ---\n` + lines.join(' ');
+    }
+    return text;
+  }
+
+  async function extractTextFromFile(file){
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (['txt', 'md', 'csv', 'json'].includes(ext)) return readAsText(file);
+    if (ext === 'docx') return extractDocx(file);
+    if (ext === 'xlsx' || ext === 'xls') return extractXlsx(file);
+    if (ext === 'pptx') return extractPptx(file);
+    throw new Error('unsupported');
+  }
+
+  roadmapFileInput.addEventListener('change', async () => {
     const file = roadmapFileInput.files[0];
     if(!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
+    $('setup-error').innerHTML = '';
+    const originalLabel = uploadBtnLabelEl.textContent;
+    uploadBtnLabelEl.textContent = t().processingFile;
+
+    try{
+      const content = await extractTextFromFile(file);
       state.fileName = file.name;
-      state.fileContent = String(e.target.result).slice(0, 12000); // cap length
+      state.fileContent = content.slice(0, 12000);
       fileChipName.textContent = file.name;
       fileChip.classList.add('visible');
-    };
-    reader.onerror = () => {
-      $('setup-error').innerHTML = '<div class="error-box">' + t().errorFile + '</div>';
-    };
-    reader.readAsText(file);
+    }catch(err){
+      const msg = err && err.message === 'unsupported' ? t().errorUnsupportedFile : t().errorParsingFile;
+      $('setup-error').innerHTML = '<div class="error-box">' + msg + '</div>';
+    }finally{
+      uploadBtnLabelEl.textContent = originalLabel;
+      roadmapFileInput.value = "";
+    }
+  });
+
+  function parseGoogleDocsUrl(url){
+    const docMatch = url.match(/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/);
+    if(docMatch) return { id: docMatch[1], exportUrl: `https://docs.google.com/document/d/${docMatch[1]}/export?format=txt` };
+    const slideMatch = url.match(/docs\.google\.com\/presentation\/d\/([a-zA-Z0-9_-]+)/);
+    if(slideMatch) return { id: slideMatch[1], exportUrl: `https://docs.google.com/presentation/d/${slideMatch[1]}/export/txt` };
+    return null;
+  }
+
+  gdocsBtn.addEventListener('click', async () => {
+    const url = gdocsInput.value.trim();
+    $('setup-error').innerHTML = '';
+    const parsed = parseGoogleDocsUrl(url);
+    if(!parsed){
+      $('setup-error').innerHTML = '<div class="error-box">' + t().errorGdocsInvalid + '</div>';
+      return;
+    }
+    const originalLabel = gdocsBtn.textContent;
+    gdocsBtn.disabled = true;
+    gdocsBtn.textContent = t().gdocsBtnLoading;
+
+    try{
+      const response = await fetch('/api/fetch-doc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: parsed.exportUrl })
+      });
+      if(!response.ok) throw new Error('fetch failed');
+      const data = await response.json();
+      if(!data.text) throw new Error('empty');
+      state.fileName = url;
+      state.fileContent = String(data.text).slice(0, 12000);
+      fileChipName.textContent = url.length > 40 ? url.slice(0, 40) + '…' : url;
+      fileChip.classList.add('visible');
+      gdocsInput.value = '';
+    }catch(err){
+      $('setup-error').innerHTML = '<div class="error-box">' + t().errorGdocsFetch + '</div>';
+    }finally{
+      gdocsBtn.disabled = false;
+      gdocsBtn.textContent = originalLabel;
+    }
   });
 
   $('file-chip-remove').addEventListener('click', () => {
@@ -1116,12 +1359,14 @@ Rules:
     state.decision = decisionInput.value.trim();
     state.history = [];
     state.pressure = 30;
+    state.userMessageCount = 0;
     const p = getPersona(state.persona);
     $('opp-avatar').textContent = p.icon;
     $('opp-name').textContent = p.name;
     $('opp-role').textContent = p.role;
     $('transcript').innerHTML = '';
     updateGauge();
+    updateMsgCounter();
     showScreen('battle');
 
     // Kick off with opponent's opening attack
@@ -1192,11 +1437,43 @@ Rules:
       })
     });
     if(!response.ok){
-      throw new Error("API request failed: " + response.status);
+      const err = new Error("API request failed: " + response.status);
+      err.status = response.status;
+      throw err;
     }
     const data = await response.json();
     const textBlock = data.content.find(b => b.type === 'text');
     return textBlock ? textBlock.text : "";
+  }
+
+  function apiErrorMessage(err){
+    if(err && err.status === 429) return t().errorApiRateLimit;
+    if(err && err.status >= 500) return t().errorApiServer;
+    return t().errorApi;
+  }
+
+  function showRetryableError(containerId, message, retryFn){
+    const box = document.createElement('div');
+    box.className = 'error-box';
+    box.textContent = message;
+    const retryBtn = document.createElement('button');
+    retryBtn.type = 'button';
+    retryBtn.className = 'retry-inline';
+    retryBtn.textContent = t().retryInline;
+    retryBtn.addEventListener('click', () => {
+      $(containerId).innerHTML = '';
+      retryFn();
+    });
+    box.appendChild(document.createElement('br'));
+    box.appendChild(retryBtn);
+    $(containerId).innerHTML = '';
+    $(containerId).appendChild(box);
+  }
+
+  function updateMsgCounter(){
+    const el = $('msg-counter');
+    if(!el) return;
+    el.textContent = t().msgCounter(state.userMessageCount, MAX_USER_MESSAGES);
   }
 
   async function requestOpponentTurn(isOpening){
@@ -1232,7 +1509,7 @@ Rules:
       updateGauge();
     }catch(err){
       hideTyping();
-      $('battle-error').innerHTML = '<div class="error-box">' + t().errorApi + '</div>';
+      showRetryableError('battle-error', apiErrorMessage(err), () => requestOpponentTurn(isOpening));
     }finally{
       sendBtn.disabled = false;
       userInput.disabled = false;
@@ -1243,6 +1520,8 @@ Rules:
   async function sendUserTurn(){
     const text = userInput.value.trim();
     if(!text) return;
+    if(state.userMessageCount >= MAX_USER_MESSAGES) return;
+
     addMessage('user', text);
     userInput.value = '';
     autoResize();
@@ -1268,13 +1547,30 @@ Rules:
       addMessage('assistant', message);
       state.pressure += delta;
       updateGauge();
+
+      state.userMessageCount++;
+      updateMsgCounter();
+
+      if(state.userMessageCount >= MAX_USER_MESSAGES){
+        sendBtn.disabled = true;
+        userInput.disabled = true;
+        $('battle-error').innerHTML = '<div class="error-box" style="color:var(--text-dim); background:var(--panel-alt); border-color:var(--border);">' + t().msgLimitNote + '</div>';
+        setTimeout(runDebrief, 1400);
+        return;
+      }
     }catch(err){
       hideTyping();
-      $('battle-error').innerHTML = '<div class="error-box">' + t().errorApi + '</div>';
+      showRetryableError('battle-error', apiErrorMessage(err), () => {
+        userInput.value = text;
+        autoResize();
+        sendUserTurn();
+      });
     }finally{
-      sendBtn.disabled = false;
-      userInput.disabled = false;
-      userInput.focus();
+      if(state.userMessageCount < MAX_USER_MESSAGES){
+        sendBtn.disabled = false;
+        userInput.disabled = false;
+        userInput.focus();
+      }
     }
   }
 
@@ -1316,13 +1612,23 @@ Rules:
       $('debrief-loading').style.display = 'none';
       $('debrief-content').style.display = 'block';
 
+      const badge = $('persuasion-badge');
+      if(state.pressure >= 50){
+        badge.textContent = tr.persuasionFail;
+        badge.style.display = 'block';
+      }else{
+        badge.style.display = 'none';
+      }
+
       if(parsed){
         $('score-num').innerHTML = (parsed.score || '–') + '<span>/10</span>';
         $('verdict-text').textContent = parsed.verdict || '';
         $('strengths-list').innerHTML = (parsed.strengths || []).map(s => `<li>${escapeHtml(s)}</li>`).join('');
         $('weaknesses-list').innerHTML = (parsed.weaknesses || []).map(s => `<li>${escapeHtml(s)}</li>`).join('');
+        lastDebriefSummary = buildDebriefSummary(p.name, parsed, badge.style.display === 'block' ? tr.persuasionFail : '');
       }else{
         $('verdict-text').textContent = raw;
+        lastDebriefSummary = raw;
       }
     }catch(err){
       $('debrief-loading').style.display = 'none';
@@ -1330,6 +1636,34 @@ Rules:
       $('verdict-text').textContent = t().errorDebrief;
     }
   }
+
+  let lastDebriefSummary = '';
+  function buildDebriefSummary(opponentName, parsed, badgeText){
+    const lines = [
+      `Roadmap Defense Simulator - vs ${opponentName}`,
+      `Score: ${parsed.score || '-'}/10`,
+      parsed.verdict || '',
+      '',
+      'Strengths:',
+      ...(parsed.strengths || []).map(s => '- ' + s),
+      '',
+      'Weaknesses:',
+      ...(parsed.weaknesses || []).map(s => '- ' + s)
+    ];
+    if(badgeText) lines.push('', badgeText);
+    return lines.join('\n');
+  }
+
+  $('copy-results-btn').addEventListener('click', async () => {
+    if(!lastDebriefSummary) return;
+    try{
+      await navigator.clipboard.writeText(lastDebriefSummary);
+      const btn = $('copy-results-btn');
+      const original = btn.textContent;
+      btn.textContent = t().copyResultsCopied;
+      setTimeout(() => { btn.textContent = original; }, 1800);
+    }catch(err){ /* clipboard unavailable, silently ignore */ }
+  });
 
   function escapeHtml(str){
     const div = document.createElement('div');
@@ -1340,8 +1674,10 @@ Rules:
   $('retry-btn').addEventListener('click', () => {
     state.history = [];
     state.pressure = 30;
+    state.userMessageCount = 0;
     transcript.innerHTML = '';
     updateGauge();
+    updateMsgCounter();
     showScreen('battle');
     requestOpponentTurn(true);
   });
@@ -1349,6 +1685,7 @@ Rules:
   $('restart-btn').addEventListener('click', () => {
     state.persona = null;
     state.history = [];
+    state.userMessageCount = 0;
     [...personaGrid.children].forEach(c => c.classList.remove('selected'));
     customFields.classList.remove('visible');
     updateStartBtn();

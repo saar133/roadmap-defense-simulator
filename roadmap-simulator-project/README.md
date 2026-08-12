@@ -6,6 +6,7 @@ roadmap-simulator-project/
   index.html      <- האתר עצמו
   api/
     chat.js       <- פונקציית שרת שמחזיקה את מפתח ה-API בסתר
+    fetch-doc.js  <- פונקציית שרת לייבוא קישורי Google Docs/Slides
 ```
 
 ## שלב 1: מפתח API
@@ -34,3 +35,6 @@ roadmap-simulator-project/
 
 ## הערת עלות
 כל שיחה בסימולטור עולה כמה סנטים בודדים (טוקנים של Claude). מומלץ להגדיר תקציב חודשי מקסימלי בעמוד ה-Billing ב-console.anthropic.com, כדי שלא תופתע אם האתר יקבל תנועה בלתי צפויה.
+
+## מעדכנים אתר שכבר פרוס
+אם כבר עשית Deploy בעבר וקיבלת קבצים מעודכנים (כמו עכשיו) - פשוט תעלה את הקבצים החדשים ל-GitHub repo הקיים (Add file → Upload files, בחר "Replace" אם GitHub שואל), ו-Vercel יבנה ויפרוס גרסה חדשה אוטומטית תוך דקה. אין צורך ליצור פרויקט חדש ב-Vercel או להגדיר שוב את ה-Environment Variable.
