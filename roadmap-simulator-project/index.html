@@ -648,6 +648,13 @@
     transition: color 0.15s;
   }
   .site-footer a:hover{ color: var(--amber); }
+  .footer-note{
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    color: var(--text-faint);
+    margin-top: 4px;
+    opacity: 0.7;
+  }
 
   ::-webkit-scrollbar{ width: 8px; }
   ::-webkit-scrollbar-track{ background: transparent; }
@@ -817,6 +824,7 @@
 
 <footer class="site-footer">
   <a href="https://www.linkedin.com/in/saar-shwartz-07317431b" target="_blank" rel="noopener noreferrer" id="footer-credit">Built by Saar Shwartz</a>
+  <div class="footer-note" id="footer-note">שיחות עשויות להישמר לצורך שיפור הכלי</div>
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
@@ -881,6 +889,7 @@
       persuasionFail: "עדיין לא שכנעת - נראה שהטיעונים שלך לא היו מספיק חזקים 😏",
       copyResultsBtn: "העתק תוצאות",
       copyResultsCopied: "הועתק ✓",
+      footerNote: "שיחות עשויות להישמר לצורך שיפור הכלי",
       openingContext: (decision, fileCtx) => `זו ההחלטה שה-PM מציג בישיבה: "${decision}"${fileCtx}\n\nפתח את הישיבה עם התקפה ראשונה חדה על ההחלטה הזו.`,
       fileContext: (name, content) => `\n\nמסמך רואדמאפ מצורף (${name}) לעיון, כרקע לישיבה:\n"""\n${content}\n"""`,
       continueContext: "המשך את הישיבה בהתבסס על מה שנאמר עד כה.",
@@ -948,6 +957,7 @@
       persuasionFail: "You haven't persuaded them yet - looks like your arguments weren't strong enough 😏",
       copyResultsBtn: "Copy results",
       copyResultsCopied: "Copied ✓",
+      footerNote: "Conversations may be logged to help improve this tool",
       openingContext: (decision, fileCtx) => `This is the decision the PM is presenting in the meeting: "${decision}"${fileCtx}\n\nOpen the meeting with a sharp first attack on this decision.`,
       fileContext: (name, content) => `\n\nAttached roadmap document (${name}) for reference, as background for the meeting:\n"""\n${content}\n"""`,
       continueContext: "Continue the meeting based on what's been said so far.",
@@ -1139,6 +1149,7 @@ Rules:
     $('retry-btn').textContent = tr.retryBtn;
     $('restart-btn').textContent = tr.restartBtn;
     $('copy-results-btn').textContent = tr.copyResultsBtn;
+    $('footer-note').textContent = tr.footerNote;
     updateMsgCounter();
 
     $('theme-dark-btn').textContent = tr.themeDark;
@@ -1630,11 +1641,30 @@ Rules:
         $('verdict-text').textContent = raw;
         lastDebriefSummary = raw;
       }
+
+      logSession(p.name, parsed, transcriptText);
     }catch(err){
       $('debrief-loading').style.display = 'none';
       $('debrief-content').style.display = 'block';
       $('verdict-text').textContent = t().errorDebrief;
     }
+  }
+
+  function logSession(opponentName, parsed, transcriptText){
+    try{
+      fetch('/api/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lang: state.lang,
+          opponent: opponentName,
+          decision: state.decision,
+          transcript: transcriptText,
+          score: parsed ? parsed.score : null,
+          finalPressure: Math.round(state.pressure)
+        })
+      }).catch(() => {}); // logging is best-effort, never surface failures to the visitor
+    }catch(err){ /* ignore */ }
   }
 
   let lastDebriefSummary = '';
